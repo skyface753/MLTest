@@ -1,0 +1,8 @@
+services:
+  ml:
+    image: skyface753/nodejsrunner
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./ml:/usr/src/app
