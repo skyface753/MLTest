@@ -13,7 +13,7 @@ import numpy as np
 import os 
 
 recognizer = cv2.face.LBPHFaceRecognizer_create()
-recognizer.read('trainer/trainer.yml')
+recognizer.read('/Users/sebastian/Repos/MLTest/FaceDetection/trainer/trainer.yml')
 # cascadePath = "haarcascade_frontalface_default.xml"
 faceCascade = cv2.CascadeClassifier('/Users/sebastian/Repos/MLTest/FaceDetection/Cascades/haarcascade_frontalface_default.xml')
 

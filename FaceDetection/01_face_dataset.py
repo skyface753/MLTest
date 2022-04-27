@@ -26,7 +26,7 @@ print("\n [INFO] Initializing face capture. Look the camera and wait ...")
 # Initialize individual sampling face count
 count = 0
 initCount = 1
-while(exists("dataset/User." + str(face_id) + '.' + str(initCount) + ".jpg")):
+while(exists("/Users/sebastian/Repos/MLTest/FaceDetection/dataset/User." + str(face_id) + '.' + str(initCount) + ".jpg")):
     initCount += 1
 print("InitCount: " + str(initCount))
 
@@ -46,7 +46,7 @@ while(True):
         
 
         # Save the captured image into the datasets folder
-        cv2.imwrite("dataset/User." + str(face_id) + '.' + str(count + initCount) + ".jpg", gray[y:y+h,x:x+w])
+        cv2.imwrite("/Users/sebastian/Repos/MLTest/FaceDetection/dataset/User." + str(face_id) + '.' + str(count + initCount) + ".jpg", gray[y:y+h,x:x+w])
 
         cv2.imshow('image', img)
         count += 1

@@ -1,0 +1,2 @@
+mlagents-learn config/ppo/3DBall.yaml --run-id=3DBall01
+tensorboard --logdir results
