@@ -2,6 +2,9 @@ from tkinter import *
 import time
 import random
 
+
+import numpy as np
+
 root = Tk()
 root.title("Bounce Ball Game")
 root.geometry("500x570")
@@ -32,6 +35,13 @@ class Ball:
         self.cvs.move(self.id, self.a, self.b)
         self.cvs_height = canvas.winfo_height()
         self.cvs_width = canvas.winfo_width()
+
+    def reset(self):
+        self.cvs.move(self.id, 230, 461)
+        start = [4, 3.8, 3.6, 3.4, 3.2, 3, 2.8, 2.6]
+        random.shuffle(start)
+        self.a = start[0]
+        self.b = -start[0]
 
     def stone_strike(self, push):
         for stone_line in self.stones:
@@ -88,7 +98,11 @@ class Pole:
         self.cvs_width = canvas.winfo_width()
         self.cvs.bind_all("<Left>", self.turn_left)
         self.cvs.bind_all("<Right>", self.turn_right)
-        self.cvs.bind_all("<space>", self.pauseSeconds)
+        self.cvs.bind_all("<space>", self.pause)
+    
+    def reset(self):
+        self.a = 0
+
 
     def draw(self):
         push = self.cvs.coords(self.id)
@@ -101,8 +115,12 @@ class Pole:
 
     def turn_left(self, event):
         self.a = -3.5
+    def turn_left(self):
+        self.a = -3.5
 
     def turn_right(self, event):
+        self.a = 3.5
+    def turn_right(self):
         self.a = 3.5
 
     def pause(self, event):
@@ -111,80 +129,105 @@ class Pole:
             self.pauseSeconds = 0
 
 
+
+
 class Stone:
     def __init__(self, cvs, clr):
         self.cvs = cvs
         self.id = canvas.create_oval(5, 5, 25, 25, fill=clr, width=2)
 
+BALL_COLOR = ["blue", "green", "violet"]
+STONE_COLOR = ["green", "dark blue", "red", "pink", "violet", "yellow",
+                "orange", "gray", "brown", "white", "blue", "yellow green",
+                "navajo white", "dark gray", "violet red", "powder blue", "blue violet"]
 
 playing = False
 
 
-def start_game(event):
-    global playing
-    if playing is False:
+class Environment:
+    def __init__(self):
+        self.done = False
         playing = True
         score.configure(text="Score: 00")
         canvas.delete("all")
-        BALL_COLOR = ["blue", "green", "violet"]
-        STONE_COLOR = ["green", "dark blue", "red", "pink", "violet", "yellow",
-                       "orange", "gray", "brown", "white", "blue", "yellow green",
-                       "navajo white", "dark gray", "violet red", "powder blue", "blue violet"]
         random.shuffle(BALL_COLOR)
-        pole = Pole(canvas, "yellow")
-        stones = []
+        self.pole = Pole(canvas, "yellow")
+        self.stones = []
         for i in range(0, 5):
             b = []
             for j in range(0, 19):
                 random.shuffle(STONE_COLOR)
                 tmp = Stone(canvas, STONE_COLOR[0])
                 b.append(tmp)
-            stones.append(b)
+            self.stones.append(b)
 
         for i in range(0, 5):
             for j in range(0, 19):
-                canvas.move(stones[i][j].id, 25 * j, 25 * i)
+                canvas.move(self.stones[i][j].id, 25 * j, 25 * i)
 
-        ball = Ball(canvas, BALL_COLOR[0], pole, stones, score)
+        self.ball = Ball(canvas, BALL_COLOR[0], self.pole, self.stones, score)
         root.update_idletasks()
         root.update()
 
-        time.sleep(1)
-        while 1:
-            if pole.pauseSeconds != 1:
-                try:
-                    canvas.delete(m)
-                    del m
-                except:
-                    pass
-                if not ball.bottom_hit:
-                    ball.draw()
-                    pole.draw()
-                    root.update_idletasks()
-                    root.update()
-                    time.sleep(0.01)
-                    if ball.hit == 95:
-                        canvas.create_text(250, 250, text="YOU WON !!", fill="yellow", font="Calibri 24 ")
-                        root.update_idletasks()
-                        root.update()
-                        playing = False
-                        break
-                else:
-                    canvas.create_text(250, 250, text="GAME OVER!!", fill="red", font="Calibri 24 ")
-                    root.update_idletasks()
-                    root.update()
-                    playing = False
-                    break
-            else:
-                try:
-                    if m == None: pass
-                except:
-                    m = canvas.create_text(250, 250, text="PAUSE!!", fill="green", font="Calibri 24 ")
+    def step(self, action):
+        self.reward = 0
+        self.done = 0
+
+        if action == 0:
+            self.pole.turn_left()
+            self.reward -= 0.1
+        elif action == 1:
+            self.pole.turn_right()
+            self.reward -= 0.1
+        
+        self.ball.draw()
+        self.pole.draw()
+        root.update_idletasks()
+        root.update()
+        time.sleep(0.01)
+        if not self.ball.bottom_hit:
+            if self.ball.hit == 95:
+                canvas.create_text(250, 250, text="YOU WON !!", fill="yellow", font="Calibri 24 ")
                 root.update_idletasks()
                 root.update()
+                self.done = True
+                self.reward += 3
+                playing = False
+        else:
+            canvas.create_text(250, 250, text="YOU LOST !!", fill="red", font="Calibri 24 ")
+            root.update_idletasks()
+            root.update()
+            self.done = True
+            self.reward -= 3
+            playing = False
+        polePos = self.pole.cvs.coords(self.pole.id)
+        ballPos = self.ball.cvs.coords(self.ball.id)
+        state = [polePos[0], polePos[2], ballPos[0], ballPos[2]]
+        return self.reward, state, self.done
+
+    def reset(self):
+        playing = False
+        self.pole.reset()
+        self.stones = []
+        for i in range(0, 5):
+            b = []
+            for j in range(0, 19):
+                random.shuffle(STONE_COLOR)
+                tmp = Stone(canvas, STONE_COLOR[0])
+                b.append(tmp)
+            self.stones.append(b)
+
+        for i in range(0, 5):
+            for j in range(0, 19):
+                canvas.move(self.stones[i][j].id, 25 * j, 25 * i)
+
+        self.ball.reset()
+        root.update_idletasks()
+        root.update()
+        polePos = self.pole.cvs.coords(self.pole.id)
+        ballPos = self.ball.cvs.coords(self.ball.id)
+        state = [polePos[0], polePos[2], ballPos[0], ballPos[2]]
+        return state
+            
 
 
-root.bind_all("<Return>", start_game)
-canvas.create_text(250, 250, text="Press Enter to start Game!!", fill="yellow", font="Calibri 18")
-j = canvas.find_all()
-root.mainloop()

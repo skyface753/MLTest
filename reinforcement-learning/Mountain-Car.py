@@ -19,17 +19,20 @@ START_EPSILON_DECAYING = 1
 END_EPSILON_DECAYING = EPISODES//2
 epsilon_decay_value = epsilon/(END_EPSILON_DECAYING - START_EPSILON_DECAYING)
 q_table = np.random.uniform(low=-2, high=0, size=(DISCRETE_OS_SIZE + [env.action_space.n]))
-def get_discrete_state(state):
+def get_discrete_state(state, episode):
     discrete_state = (state - env.observation_space.low)/discrete_os_win_size
+    if episode % SHOW_EVERY == 0:
+        print(str(episode) + ": " + str(discrete_state) + " : " + str(state) + " : " + str(discrete_os_win_size) + " : " + str(env.observation_space.low))
+    # print(str(state) + "-" + str(env.observation_space.low) + "=" + str(state - env.observation_space.low))
     return tuple(discrete_state.astype(np.int))  # we use this tuple to look up the 3 Q values for the available actions in the q-table
 
 for episode in range(EPISODES):
-    discrete_state = get_discrete_state(env.reset())
+    discrete_state = get_discrete_state(env.reset(), episode)
     done = False
     if episode % SHOW_EVERY == 0:
         render = True
         reachCount = 0
-        print(episode)
+        # print(episode)
     else:
         render = False
     while not done:
@@ -40,8 +43,8 @@ for episode in range(EPISODES):
             # Get random action
             action = np.random.randint(0, env.action_space.n)
         new_state, reward, done, _ = env.step(action)
-        new_discrete_state = get_discrete_state(new_state)
-        if episode % SHOW_EVERY == 0:
+        new_discrete_state = get_discrete_state(new_state, episode)
+        if render:
             env.render()
         # If simulation did not end yet after last step - update Q table
         if not done:
