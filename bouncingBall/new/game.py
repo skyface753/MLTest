@@ -1,19 +1,21 @@
 import turtle as t
 import random
-import time
 
-ballSpeed = 9
+ballSpeed = 10
 paddleSpeed = 40
 
-STONE_COLOR = ["green", "dark blue", "red", "pink", "violet", "yellow",
-                "orange", "gray", "brown", "white", "blue", "yellow green",
-                "navajo white", "dark gray", "violet red", "powder blue", "blue violet"]
+# STONE_COLOR = ["green", "dark blue", "red", "pink", "violet", "yellow",
+#                 "orange", "gray", "brown", "white", "blue", "yellow green",
+#                 "navajo white", "dark gray", "violet red", "powder blue", "blue violet"]
+
+allTimes = []
 
 class Game():
     def __init__(self):
         self.done = False
         self.reward = 0
         self.hit, self.miss = 0, 0
+        self.hitsPerGame = 0
 
         # Setup Background
 
@@ -30,7 +32,7 @@ class Game():
         self.paddle = t.Turtle()
         self.paddle.speed(0)
         self.paddle.shape('square')
-        self.paddle.shapesize(stretch_wid=1, stretch_len=5)
+        self.paddle.shapesize(stretch_wid=1, stretch_len=6)
         self.paddle.color('white')
         self.paddle.penup()
         self.paddle.goto(0, -275)
@@ -58,8 +60,18 @@ class Game():
         self.score.goto(0, 250)
         self.score.write("Hit: {}   Missed: {}".format(self.hit, self.miss), align='center', font=('Courier', 24, 'normal'))
 
+        # Hits per game
+        self.avgTime = 0
+        self.currHits = t.Turtle()
+        self.currHits.speed(0)
+        self.currHits.color('white')
+        self.currHits.penup()
+        self.currHits.hideturtle()
+        self.currHits.goto(0, 225)
+        self.currHits.write("Hits: {}".format(self.hitsPerGame), align='center', font=('Courier', 24, 'normal'))
+        
         # Stones
-        self.stones = getStones()
+        # self.stones = getStones()
 
     def paddle_right(self):
         if self.paddle.xcor() < 225:
@@ -100,29 +112,32 @@ class Game():
             self.done = True
 
         # Ball paddle checking
-        if abs(self.ball.ycor() + 250) < 2 and abs(self.paddle.xcor() - self.ball.xcor()) < 55:
-            self.ball.dy *= -1
+        if abs(self.ball.ycor() + 250) < 10 and abs(self.paddle.xcor() - self.ball.xcor()) < 70:
+            self.ball.dy = abs(self.ball.dy)
             self.hit += 1
+            self.hitsPerGame += 1
             self.score.clear()
             self.score.write("Hit: {}   Missed: {}".format(self.hit, self.miss), align='center', font=('Courier', 24, 'normal'))
             self.reward += 3
         
-        # Ball stone checking
-        hasStoneHit = False
-        for stone in self.stones:
-            if abs(stone.ycor() - self.ball.ycor()) < 20 and abs(stone.xcor() - self.ball.xcor()) < 20:
-                print("Stone hit")
-                hasStoneHit = True
-                stone.color(random.choice(STONE_COLOR))
-                self.reward += 0.3
-                self.stones.remove(stone)
-        if hasStoneHit:
-            self.ball.dy *= -1
+        # # Ball stone checking
+        # hasStoneHit = False
+        # for stone in self.stones:
+        #     if abs(stone.ycor() - self.ball.ycor()) < 20 and abs(stone.xcor() - self.ball.xcor()) < 20:
+        #         print("Stone hit")
+        #         hasStoneHit = True
+        #         stone.color(random.choice(STONE_COLOR))
+        #         self.reward += 0.3
+        #         self.stones.remove(stone)
+        # if hasStoneHit:
+        #     self.ball.dy *= -1
                 
 
         
     def reset(self):
+        self.done = False
         self.paddle.goto(0, -275)
+        self.hitsPerGame = 0
         # Random ball start position
         randomX = random.randint(-290, 290)
         self.ball.goto(randomX, 100)
@@ -137,7 +152,7 @@ class Game():
             self.ball.dy = -ballSpeed
         else:
             self.ball.dy = ballSpeed
-        self.stones = getStones()
+        # self.stones = getStones()
         return [self.paddle.xcor()*0.01, self.ball.xcor()*0.01, self.ball.ycor()*0.01, self.ball.dx, self.ball.dy]
 
     def step(self, action, render=False):
@@ -150,37 +165,37 @@ class Game():
         elif action == 2:
             self.paddle_right()
             self.reward -= 0.1
-        # Current time
-        start = time.time()
+       
         self.run_frame(render)
-        end = time.time()
-        diff = end - start
-        print("Time: {}".format(diff))
+        self.currHits.clear()
+        self.currHits.write("Hits: {}".format(self.hitsPerGame), align='center', font=('Courier', 24, 'normal'))
         state = [self.paddle.xcor()*0.01, self.ball.xcor()*0.01, self.ball.ycor()*0.01, self.ball.dx, self.ball.dy]
         return self.reward, state, self.done
 
-def getStones():
-    stones = []
-    for i in range(0, 5):
-        # b = []
-        for j in range(0, 19):
-            random.shuffle(STONE_COLOR)
-            tmp = t.Turtle()
-            tmp.speed(0)
-            tmp.shape('square')
-            tmp.shapesize(stretch_wid=1, stretch_len=1)
-            tmp.color(STONE_COLOR[0])
-            tmp.penup()
-            column = -280 + j*30
-            row = 250 - i*20
-            tmp.goto(column, row)
-            # tmp.goto(i * -100, j * -10)
-            # b.append(tmp)
-            stones.append(tmp)
-        # stones.append(b)
-    return stones   
+# def getStones():
+#     stones = []
+#     for i in range(0, 5):
+#         # b = []
+#         for j in range(0, 19):
+#             random.shuffle(STONE_COLOR)
+#             tmp = t.Turtle()
+#             tmp.speed(0)
+#             tmp.shape('square')
+#             tmp.shapesize(stretch_wid=1, stretch_len=1)
+#             tmp.color(STONE_COLOR[0])
+#             tmp.penup()
+#             column = -280 + j*30
+#             row = 250 - i*20
+#             tmp.goto(column, row)
+#             # tmp.goto(i * -100, j * -10)
+#             # b.append(tmp)
+#             stones.append(tmp)
+#         # stones.append(b)
+#     return stones   
 
-# env = Game()
-
-# while True:
-#      env.run_frame()
+if __name__ == '__main__':
+    env = Game()
+    while True:
+        env.run_frame(True)
+        if env.done:
+            env.reset()

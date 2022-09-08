@@ -1,12 +1,12 @@
+
+from time import sleep
 from game import Game
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import random
 import numpy as np
 from keras import Sequential
-from keras.models import load_model
+from keras.models import load_model, model_from_json
 from collections import deque
-from keras.layers import Dense
+from keras.layers import Dens
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 # pip3 install tensorflow-macos
@@ -34,20 +34,30 @@ class DQN:
         self.model = self.build_model()
 
     def build_model(self):
+        try:
+            # load json and create model
+            json_file = open('model.json', 'r')
+            print("Loaded model from disk")
+            sleep(1)
+            loaded_model_json = json_file.read()
+            json_file.close()
+            loaded_model = model_from_json(loaded_model_json)
+            # load weights into new model
+            loaded_model.load_weights("model.h5")
+            loaded_model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
+            return loaded_model
+            # # return loaded_model
+        except:
+            print('No model found - creating new one')
+            sleep(1)
+            model = Sequential()
+            model.add(Dense(64, input_shape=(self.state_space,), activation='relu'))
+            model.add(Dense(64, activation='relu'))
+            model.add(Dense(self.action_space, activation='linear'))
+            model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
+            model.trainable = True
+            return model
 
-        model = Sequential()
-        model.add(Dense(64, input_shape=(self.state_space,), activation='relu'))
-        model.add(Dense(64, activation='relu'))
-        model.add(Dense(self.action_space, activation='linear'))
-        model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
-        model.trainable = True
-        # try:
-        #     model = load_model('dqn_model.h5')
-        #     print('Loaded model from disk')
-        # except:
-        #     print('No model found')
-
-        return model
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -91,16 +101,18 @@ def train_dqn(episode):
 
     action_space = 3
     state_space = 5
-    max_steps = 1000
+    # max_steps = 1000
     
-    RENDER_EVERY = 5
-
+    RENDER_EVERY = 1
+    hitsList = []
     agent = DQN(action_space, state_space)
     for e in range(episode):
         state = env.reset()
         state = np.reshape(state, (1, state_space))
         score = 0
-        for i in range(max_steps):
+        # for i in range(max_steps):
+        
+        while True:
             action = agent.act(state)
             reward, next_state, done = env.step(action, e % RENDER_EVERY == 0)
             score += reward
@@ -109,18 +121,31 @@ def train_dqn(episode):
             state = next_state
             agent.replay()
             if done:
+                hitsList.append(env.hitsPerGame)
                 print("episode: {}/{}, score: {}".format(e, episode, score))
                 break
         loss.append(score)
+        plt.plot([e for e in range(len(loss))], loss)
+        plt.title('Loss')
+        plt.ion()
+        plt.draw()
+        plt.pause(0.001)
+        plt.plot([e for e in range(len(hitsList))], hitsList)
+        plt.title('Hits till death')
+        plt.ion()
+        plt.draw()
+        plt.pause(0.001)
         if(len(loss) % 5 == 0):
-            print("SAVE MODEL")
-            agent.model.save("./dqn_model.h5")
+            # serialize model to JSON
+            model_json = agent.model.to_json()
+            with open("model.json", "w") as json_file:
+                json_file.write(model_json)
+            # serialize weights to HDF5
+            agent.model.save_weights("model.h5")
+            print("Saved model to disk")
+            
             plot_model(agent.model, to_file='./dqn_model.png', show_shapes=True)
-            plt.plot([e for e in range(len(loss))], loss)
-            plt.title('Loss')
-            plt.ion()
-            plt.draw()
-            plt.pause(0.001)
+            
     print("Episode: {}/{}, score: {}".format(e, episode, score))
     return loss
 
