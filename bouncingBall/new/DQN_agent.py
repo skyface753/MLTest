@@ -6,7 +6,7 @@ import numpy as np
 from keras import Sequential
 from keras.models import load_model, model_from_json
 from collections import deque
-from keras.layers import Dens
+from keras.layers import Dense
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 # pip3 install tensorflow-macos
