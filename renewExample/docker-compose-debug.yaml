@@ -1,0 +1,24 @@
+# services:
+#   redis:
+#     image: bitnami/redis:latest
+#     ports:
+#       - 6379:6379
+#     environment:
+#       - ALLOW_EMPTY_PASSWORD=yes
+services:
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - '127.0.0.1:27017:27017'
+    volumes:
+      - mongo-weather-data:/data/db
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - '127.0.0.1:8092:8081'
+
+volumes:
+  mongo-weather-data:
